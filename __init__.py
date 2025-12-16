@@ -436,19 +436,14 @@ def get_nodes_map():
 # 保存原始的 get 方法
 _original_request = aiohttp.ClientSession._request
 
-# 定义新的 get 方法
-async def new_request(self, method, url, *args, **kwargs):
-   # 检查环境变量以确定是否使用代理
-    proxy = os.environ.get('HTTP_PROXY') or os.environ.get('HTTPS_PROXY') or os.environ.get('http_proxy') or os.environ.get('https_proxy')
-    # print('Proxy Config:',proxy)
-    if proxy and 'proxy' not in kwargs:
-        kwargs['proxy'] = proxy
-        print('Use Proxy:',proxy)
-    # 调用原始的 _request 方法
-    return await _original_request(self, method, url, *args, **kwargs)
+# # 应用 aiohttp Monkey Patch
+_original_ClientSession = aiohttp.ClientSession
 
-# 应用 Monkey Patch
-aiohttp.ClientSession._request = new_request
+def trust_env_ClientSesison_init( self, *args, **kwargs): 
+    kwargs['trust_env']=True
+    _original_ClientSession.__init__(self,trust_env=True ,*args, **kwargs)
+aiohttp.ClientSession.__init__ = trust_env_ClientSesison_init
+
 import socket
 
 async def check_port_available(address, port):
